@@ -209,9 +209,57 @@ function SrlResult({ sentences }: { sentences: unknown[] }) {
   );
 }
 
+function RawJson({ data }: { data: unknown }) {
+  const [copied, setCopied] = useState(false);
+  const text = JSON.stringify(data, null, 2);
+
+  const copy = useCallback(() => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  }, [text]);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={copy}
+        className="mono"
+        style={{
+          position: "absolute", top: 10, right: 10,
+          fontSize: 11, padding: "3px 10px", borderRadius: 5,
+          border: "1px solid var(--border)",
+          background: copied ? "#16a34a" : "var(--bg)",
+          color: copied ? "#fff" : "var(--text-muted)",
+          cursor: "pointer", transition: "all 0.15s",
+        }}
+      >
+        {copied ? "✓ 복사됨" : "복사"}
+      </button>
+      <pre
+        className="mono"
+        style={{
+          fontSize: 12, lineHeight: 1.65, overflowX: "auto", maxHeight: 420,
+          padding: "14px 16px", paddingTop: 40,
+          borderRadius: 8, background: "#f6f8fa",
+          border: "1px solid var(--border)",
+          color: "#24292e",
+        }}
+      >
+        {text}
+      </pre>
+    </div>
+  );
+}
+
 function ResultView({ api, result }: { api: ApiDef; result: ResultState }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [tab, setTab] = useState<"parsed" | "raw">("parsed");
+
+  const statusColor =
+    result.status === 200 ? "#16a34a" :
+    result.status && result.status >= 400 ? "#dc2626" :
+    "var(--text-dim)";
 
   if (result.error) {
     return (
@@ -243,13 +291,21 @@ function ResultView({ api, result }: { api: ApiDef; result: ResultState }) {
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: api.color, display: "inline-block" }} />
           <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>{api.label} 결과</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span className="mono" style={{ fontSize: 11, color: "var(--text-dim)" }}>
-            {result.elapsed}ms · HTTP {result.status}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            className="mono"
+            style={{
+              fontSize: 11, padding: "2px 7px", borderRadius: 4,
+              background: statusColor + "15",
+              color: statusColor,
+              border: `1px solid ${statusColor}30`,
+            }}
+          >
+            {result.status}
           </span>
+          <span className="mono" style={{ fontSize: 11, color: "var(--text-dim)" }}>{result.elapsed}ms</span>
           <span style={{
-            fontSize: 11, color: "var(--text-dim)",
-            display: "inline-block",
+            fontSize: 11, color: "var(--text-dim)", display: "inline-block",
             transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
             transition: "transform 0.2s",
           }}>▾</span>
@@ -277,7 +333,7 @@ function ResultView({ api, result }: { api: ApiDef; result: ResultState }) {
                   transition: "all 0.15s",
                 }}
               >
-                {t === "parsed" ? "분석 결과" : "RAW JSON"}
+                {t === "parsed" ? "분석 결과" : "API 응답"}
               </button>
             ))}
           </div>
@@ -285,16 +341,14 @@ function ResultView({ api, result }: { api: ApiDef; result: ResultState }) {
           {/* 콘텐츠 */}
           <div style={{ padding: 16, background: "var(--bg)" }}>
             {tab === "raw" ? (
-              <pre className="mono" style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6, overflowX: "auto", maxHeight: 400 }}>
-                {JSON.stringify(result.data, null, 2)}
-              </pre>
+              <RawJson data={result.data} />
             ) : sentences ? (
               api.code === "morp"                           ? <MorphResult  sentences={sentences} /> :
               api.code === "ner"                            ? <NerResult    sentences={sentences} /> :
               api.code === "wsd" || api.code === "wsd_poly" ? <WsdResult    sentences={sentences} /> :
               api.code === "dparse"                         ? <DparseResult sentences={sentences} /> :
               api.code === "srl"                            ? <SrlResult    sentences={sentences} /> :
-              <pre className="mono" style={{ fontSize: 12, color: "var(--text-muted)" }}>{JSON.stringify(sentences, null, 2)}</pre>
+              <RawJson data={sentences} />
             ) : (
               <p style={{ fontSize: 12, color: "var(--text-dim)" }}>파싱 가능한 결과가 없습니다.</p>
             )}
