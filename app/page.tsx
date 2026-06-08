@@ -363,11 +363,26 @@ function ResultView({ api, result }: { api: ApiDef; result: ResultState }) {
 function extractSentences(json: unknown): unknown[] | null {
   if (!json || typeof json !== "object") return null;
   const j = json as Record<string, unknown>;
+
+  // body가 JSON 문자열인 경우 (e.g. { status_code, body: "...", headers })
+  if (typeof j.body === "string") {
+    try {
+      const inner = extractSentences(JSON.parse(j.body));
+      if (inner) return inner;
+    } catch { /* ignore */ }
+  }
+
+  // { data: { return_object: { sentence } } } 또는 { return_object: { sentence } }
   const ro = (j.data as Record<string, unknown>)?.return_object ?? j.return_object;
   if (ro && Array.isArray((ro as Record<string, unknown>).sentence))
     return (ro as Record<string, unknown>).sentence as unknown[];
+
+  // { sentence: [...] }
   if (Array.isArray(j.sentence)) return j.sentence;
+
+  // 배열 자체
   if (Array.isArray(json)) return json;
+
   return null;
 }
 
