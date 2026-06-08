@@ -359,6 +359,144 @@ function ResultView({ api, result }: { api: ApiDef; result: ResultState }) {
   );
 }
 
+/* ── JSON 직접 파싱 ─────────────────────────────────────────── */
+function extractSentences(json: unknown): unknown[] | null {
+  if (!json || typeof json !== "object") return null;
+  const j = json as Record<string, unknown>;
+  const ro = (j.data as Record<string, unknown>)?.return_object ?? j.return_object;
+  if (ro && Array.isArray((ro as Record<string, unknown>).sentence))
+    return (ro as Record<string, unknown>).sentence as unknown[];
+  if (Array.isArray(j.sentence)) return j.sentence;
+  if (Array.isArray(json)) return json;
+  return null;
+}
+
+function JsonParser() {
+  const [apiCode, setApiCode] = useState("");
+  const [jsonText, setJsonText] = useState("");
+  const [sentences, setSentences] = useState<unknown[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const selectedApi = APIS.find((a) => a.code === apiCode) ?? null;
+  const canParse = !!apiCode && jsonText.trim().length > 0;
+
+  const parse = useCallback(() => {
+    setError(null);
+    setSentences(null);
+    try {
+      const parsed = JSON.parse(jsonText);
+      const sents = extractSentences(parsed);
+      if (!sents) {
+        setError("sentence 배열을 찾을 수 없습니다. ETRI API 응답 전체를 붙여넣으세요.");
+        return;
+      }
+      setSentences(sents);
+    } catch {
+      setError("유효하지 않은 JSON 형식입니다.");
+    }
+  }, [jsonText]);
+
+  const dropdownStyle = {
+    width: "100%", padding: "9px 12px", borderRadius: 8,
+    border: "1px solid var(--border)", background: "var(--bg)",
+    color: apiCode ? "var(--text)" : "var(--text-dim)",
+    fontSize: 14, outline: "none", cursor: "pointer",
+    appearance: "none" as const,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat" as const,
+    backgroundPosition: "right 12px center" as const,
+    paddingRight: 32,
+  };
+
+  return (
+    <div style={{
+      background: "var(--surface)", border: "1px solid var(--border)",
+      borderRadius: 14, padding: 24, marginBottom: 20,
+    }}>
+      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 16 }}>
+        JSON 직접 파싱
+      </p>
+
+      {/* API 종류 선택 */}
+      <div style={{ marginBottom: 12 }}>
+        <select value={apiCode} onChange={(e) => { setApiCode(e.target.value); setSentences(null); setError(null); }} style={dropdownStyle}>
+          <option value="">파서 선택...</option>
+          {APIS.map((api) => <option key={api.code} value={api.code}>{api.label}</option>)}
+        </select>
+      </div>
+
+      {/* JSON 입력 */}
+      <div style={{ marginBottom: 12 }}>
+        <textarea
+          value={jsonText}
+          onChange={(e) => { setJsonText(e.target.value); setSentences(null); setError(null); }}
+          rows={6}
+          style={{
+            width: "100%", padding: "10px 12px",
+            border: "1px solid var(--border)", borderRadius: 8,
+            background: "var(--bg)", color: "var(--text)",
+            fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none",
+            fontFamily: "'IBM Plex Mono', monospace",
+            transition: "border-color 0.15s",
+          }}
+          onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
+          onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+          placeholder={`ETRI API 응답 JSON을 붙여넣으세요...\n{\n  "status": 200,\n  "data": { "return_object": { "sentence": [...] } }\n}`}
+        />
+      </div>
+
+      {/* 파싱 버튼 */}
+      <button
+        onClick={parse}
+        disabled={!canParse}
+        style={{
+          width: "100%", padding: "10px 0", borderRadius: 8, border: "none",
+          background: canParse ? "var(--accent)" : "var(--surface3)",
+          color: canParse ? "#fff" : "var(--text-dim)",
+          fontSize: 14, fontWeight: 500,
+          cursor: canParse ? "pointer" : "not-allowed",
+          transition: "opacity 0.15s",
+        }}
+      >
+        파싱
+      </button>
+
+      {/* 에러 */}
+      {error && (
+        <div style={{
+          marginTop: 12, padding: "10px 14px", borderRadius: 8, fontSize: 13,
+          background: "rgba(220,38,38,0.05)", border: "1px solid rgba(220,38,38,0.2)", color: "#dc2626",
+        }}>
+          ✕ {error}
+        </div>
+      )}
+
+      {/* 파싱 결과 */}
+      {sentences && selectedApi && (
+        <div style={{
+          marginTop: 16, padding: 16,
+          borderRadius: 10, border: "1px solid var(--border)",
+          background: "var(--bg)",
+        }}>
+          <p style={{
+            fontSize: 12, fontWeight: 500, color: selectedApi.color,
+            marginBottom: 14, display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: selectedApi.color, display: "inline-block" }} />
+            {selectedApi.label} 파싱 결과
+          </p>
+          {apiCode === "morp"                           ? <MorphResult  sentences={sentences} /> :
+           apiCode === "ner"                            ? <NerResult    sentences={sentences} /> :
+           apiCode === "wsd" || apiCode === "wsd_poly"  ? <WsdResult    sentences={sentences} /> :
+           apiCode === "dparse"                         ? <DparseResult sentences={sentences} /> :
+           apiCode === "srl"                            ? <SrlResult    sentences={sentences} /> :
+           null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── 메인 페이지 ────────────────────────────────────────────── */
 export default function Home() {
   const [selectedCode, setSelectedCode] = useState<string>("");
@@ -582,6 +720,12 @@ export default function Home() {
         {result && selectedApi && (
           <ResultView api={selectedApi} result={result} />
         )}
+
+        {/* 구분선 */}
+        <div style={{ margin: "32px 0", borderTop: "1px solid var(--border)" }} />
+
+        {/* JSON 직접 파싱 */}
+        <JsonParser />
 
         {/* 푸터 */}
         <footer style={{
