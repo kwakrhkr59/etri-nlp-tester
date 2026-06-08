@@ -210,6 +210,7 @@ function SrlResult({ sentences }: { sentences: unknown[] }) {
 }
 
 function ResultView({ api, result }: { api: ApiDef; result: ResultState }) {
+  const [isOpen, setIsOpen] = useState(false);
   const [tab, setTab] = useState<"parsed" | "raw">("parsed");
 
   if (result.error) {
@@ -230,51 +231,76 @@ function ResultView({ api, result }: { api: ApiDef; result: ResultState }) {
 
   return (
     <div className="animate-slide-up" style={{ borderRadius: 10, border: "1px solid var(--border)", overflow: "hidden" }}>
-      {/* tab bar */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "8px 14px", background: "var(--surface2)", borderBottom: "1px solid var(--border)",
-      }}>
-        <div style={{ display: "flex", gap: 4 }}>
-          {(["parsed", "raw"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className="mono"
-              style={{
-                fontSize: 12, padding: "3px 10px", borderRadius: 5, border: "none", cursor: "pointer",
-                background: tab === t ? api.color : "transparent",
-                color: tab === t ? "#fff" : "var(--text-muted)",
-                fontWeight: tab === t ? 500 : 400,
-                transition: "all 0.15s",
-              }}
-            >
-              {t === "parsed" ? "분석 결과" : "RAW JSON"}
-            </button>
-          ))}
+      {/* 아코디언 헤더 */}
+      <button
+        onClick={() => setIsOpen((v) => !v)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "12px 16px", background: "var(--surface)", border: "none", cursor: "pointer",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: api.color, display: "inline-block" }} />
+          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>{api.label} 결과</span>
         </div>
-        <span className="mono" style={{ fontSize: 11, color: "var(--text-dim)" }}>
-          {result.elapsed}ms · HTTP {result.status}
-        </span>
-      </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="mono" style={{ fontSize: 11, color: "var(--text-dim)" }}>
+            {result.elapsed}ms · HTTP {result.status}
+          </span>
+          <span style={{
+            fontSize: 11, color: "var(--text-dim)",
+            display: "inline-block",
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+          }}>▾</span>
+        </div>
+      </button>
 
-      {/* content */}
-      <div style={{ padding: 16, background: "var(--bg)" }}>
-        {tab === "raw" ? (
-          <pre className="mono" style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6, overflowX: "auto", maxHeight: 400 }}>
-            {JSON.stringify(result.data, null, 2)}
-          </pre>
-        ) : sentences ? (
-          api.code === "morp"                        ? <MorphResult  sentences={sentences} /> :
-          api.code === "ner"                         ? <NerResult    sentences={sentences} /> :
-          api.code === "wsd" || api.code === "wsd_poly" ? <WsdResult sentences={sentences} /> :
-          api.code === "dparse"                      ? <DparseResult sentences={sentences} /> :
-          api.code === "srl"                         ? <SrlResult    sentences={sentences} /> :
-          <pre className="mono" style={{ fontSize: 12, color: "var(--text-muted)" }}>{JSON.stringify(sentences, null, 2)}</pre>
-        ) : (
-          <p style={{ fontSize: 12, color: "var(--text-dim)" }}>파싱 가능한 결과가 없습니다.</p>
-        )}
-      </div>
+      {/* 펼쳐지는 콘텐츠 */}
+      {isOpen && (
+        <div style={{ borderTop: "1px solid var(--border)" }}>
+          {/* 탭 바 */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 4,
+            padding: "8px 14px", background: "var(--surface2)", borderBottom: "1px solid var(--border)",
+          }}>
+            {(["parsed", "raw"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className="mono"
+                style={{
+                  fontSize: 12, padding: "3px 10px", borderRadius: 5, border: "none", cursor: "pointer",
+                  background: tab === t ? api.color : "transparent",
+                  color: tab === t ? "#fff" : "var(--text-muted)",
+                  fontWeight: tab === t ? 500 : 400,
+                  transition: "all 0.15s",
+                }}
+              >
+                {t === "parsed" ? "분석 결과" : "RAW JSON"}
+              </button>
+            ))}
+          </div>
+
+          {/* 콘텐츠 */}
+          <div style={{ padding: 16, background: "var(--bg)" }}>
+            {tab === "raw" ? (
+              <pre className="mono" style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6, overflowX: "auto", maxHeight: 400 }}>
+                {JSON.stringify(result.data, null, 2)}
+              </pre>
+            ) : sentences ? (
+              api.code === "morp"                           ? <MorphResult  sentences={sentences} /> :
+              api.code === "ner"                            ? <NerResult    sentences={sentences} /> :
+              api.code === "wsd" || api.code === "wsd_poly" ? <WsdResult    sentences={sentences} /> :
+              api.code === "dparse"                         ? <DparseResult sentences={sentences} /> :
+              api.code === "srl"                            ? <SrlResult    sentences={sentences} /> :
+              <pre className="mono" style={{ fontSize: 12, color: "var(--text-muted)" }}>{JSON.stringify(sentences, null, 2)}</pre>
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--text-dim)" }}>파싱 가능한 결과가 없습니다.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
