@@ -5,11 +5,16 @@ const ETRI_URL_SPOKEN = "http://epretx.etri.re.kr:8000/api/WiseNLU_spoken";
 
 export async function POST(req: NextRequest) {
   try {
-    const { accessKey, analysisCode, text, mode } = await req.json();
+    const accessKey = process.env.ETRI_API_KEY;
+    if (!accessKey) {
+      return NextResponse.json({ error: "서버에 API 키가 설정되지 않았습니다." }, { status: 500 });
+    }
 
-    if (!accessKey || !analysisCode || !text) {
+    const { analysisCode, text, mode } = await req.json();
+
+    if (!analysisCode || !text) {
       return NextResponse.json(
-        { error: "accessKey, analysisCode, text 는 필수 항목입니다." },
+        { error: "analysisCode, text 는 필수 항목입니다." },
         { status: 400 }
       );
     }

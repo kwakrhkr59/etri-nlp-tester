@@ -2,20 +2,16 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0a0e17;
-  --surface: #0f1523;
-  --surface2: #161d2e;
-  --surface3: #1c2538;
-  --border: #2a3450;
-  --border-bright: #3d5080;
-  --accent: #4f8eff;
-  --accent2: #00d4aa;
-  --accent3: #ff6b6b;
-  --accent4: #ffd166;
-  --text: #e2e8f7;
-  --text-muted: #7a8db0;
-  --text-dim: #4a5a7a;
-  --glow: rgba(79, 142, 255, 0.15);
+  --bg: #ffffff;
+  --surface: #f9fafb;
+  --surface2: #f3f4f6;
+  --surface3: #e5e7eb;
+  --border: #e5e7eb;
+  --border-bright: #9ca3af;
+  --accent: #2563eb;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --text-dim: #9ca3af;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,31 +20,16 @@ body {
   background-color: var(--bg);
   color: var(--text);
   font-family: 'Noto Sans KR', sans-serif;
-  font-weight: 300;
+  font-weight: 400;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-track { background: var(--surface2); }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
 
 .mono { font-family: 'IBM Plex Mono', monospace; }
 
-/* grid bg */
-.grid-bg {
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 40px 40px;
-  background-position: -1px -1px;
-}
-
-/* glow effects */
-.glow-blue { box-shadow: 0 0 20px rgba(79,142,255,0.2), 0 0 60px rgba(79,142,255,0.05); }
-.glow-teal { box-shadow: 0 0 20px rgba(0,212,170,0.2), 0 0 60px rgba(0,212,170,0.05); }
-
-/* tag chip */
 .tag {
   display: inline-block;
   padding: 2px 8px;
@@ -59,18 +40,13 @@ body {
   letter-spacing: 0.03em;
 }
 
-/* slide-in animation */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 10px rgba(79,142,255,0.3); }
-  50%       { box-shadow: 0 0 25px rgba(79,142,255,0.6); }
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.animate-slide-up { animation: slideUp 0.35s ease both; }
-.animate-spin-slow { animation: spin 1s linear infinite; }
+.animate-slide-up { animation: slideUp 0.25s ease both; }
+.animate-spin-slow { animation: spin 0.9s linear infinite; }
